@@ -1,3 +1,4 @@
+// components/todo-app.tsx (update the existing file)
 "use client";
 
 import { useAuth } from "@/hooks/use-auth";
@@ -7,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogOut, Users } from "lucide-react";
 import { AUTHORIZED_USERS, getUserDisplayName } from "@/lib/user-mapping";
+import { cleanupOldCompletedTasks } from "@/lib/cleanup";
+import { useEffect } from "react";
 
 export function TodoApp() {
   const { user, loading: authLoading, signInWithGoogle, signOut } = useAuth();
@@ -18,6 +21,15 @@ export function TodoApp() {
     updateTodo,
     deleteTodo,
   } = useTodos();
+
+  // Run cleanup when app loads (once per session)
+  useEffect(() => {
+    if (user) {
+      cleanupOldCompletedTasks().catch(console.error);
+    }
+  }, [user]);
+
+  // ... rest of your existing component code remains the same
 
   if (authLoading) {
     return (

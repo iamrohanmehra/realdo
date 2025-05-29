@@ -1,15 +1,23 @@
+// hooks/use-todos.ts
 "use client";
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Todo } from "@/types/todo";
 import { RealtimeChannel } from "@supabase/supabase-js";
+import { shouldShowCompletedTask } from "@/lib/date-utils";
 
 export function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
+
+  // Filter todos to hide completed tasks from previous days
+  const filteredTodos = todos.filter((todo) => {
+    if (!todo.completed) return true;
+    return shouldShowCompletedTask(todo.completed_at || null);
+  });
 
   useEffect(() => {
     let channel: RealtimeChannel;
@@ -83,21 +91,13 @@ export function useTodos() {
         throw new Error("Not authenticated");
       }
 
-      console.log("Adding todo:", {
-        title,
-        description,
-        assignedToEmail,
-        created_by: user.id,
-        user_email: user.email,
-      });
-
       const { data, error } = await supabase
         .from("todos")
         .insert({
           title,
           description,
           created_by: user.id,
-          assigned_to: user.id, // Keep this for compatibility
+          assigned_to: user.id,
           assigned_to_email: assignedToEmail,
         })
         .select();
@@ -106,8 +106,6 @@ export function useTodos() {
         console.error("Supabase insert error:", error);
         throw error;
       }
-
-      console.log("Todo inserted successfully:", data);
     } catch (err) {
       console.error("Add todo error:", err);
       setError(err instanceof Error ? err.message : "Failed to add todo");
@@ -117,12 +115,22 @@ export function useTodos() {
 
   const updateTodo = async (
     id: string,
-    updates: Partial<Pick<Todo, "title" | "description" | "completed">>
+    updates: Partial<
+      Pick<Todo, "title" | "description" | "completed" | "completed_at">
+    >
   ) => {
     try {
+      // If marking as completed, add completed_at timestamp
+      const updateData = { ...updates };
+      if (updates.completed === true) {
+        updateData.completed_at = new Date().toISOString();
+      } else if (updates.completed === false) {
+        updateData.completed_at = null;
+      }
+
       const { error } = await supabase
         .from("todos")
-        .update(updates)
+        .update(updateData)
         .eq("id", id);
 
       if (error) throw error;
@@ -144,7 +152,7 @@ export function useTodos() {
   };
 
   return {
-    todos,
+    todos: filteredTodos, // Return filtered todos
     loading,
     error,
     addTodo,

@@ -1,13 +1,15 @@
+// types/todo.ts
 export interface Todo {
   id: string;
   title: string;
-  description: string | null;
+  description?: string;
   completed: boolean;
-  created_by: string;
-  assigned_to: string;
-  assigned_to_email: string; // Added this field
+  completed_at?: string; // Add this field
   created_at: string;
   updated_at: string;
+  created_by: string;
+  assigned_to: string;
+  assigned_to_email: string;
 }
 
 export interface User {
