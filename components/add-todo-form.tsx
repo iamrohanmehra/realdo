@@ -13,11 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
-
-const AUTHORIZED_USERS = [
-  "rohanmehra224466@gmail.com",
-  "ashish.efslon@gmail.com", // Fixed email
-];
+import { AUTHORIZED_USERS, getUserDisplayName } from "@/lib/user-mapping";
 
 interface AddTodoFormProps {
   onAdd: (
@@ -34,19 +30,14 @@ export function AddTodoForm({ onAdd, currentUserEmail }: AddTodoFormProps) {
   const [assignedTo, setAssignedTo] = useState<string>(currentUserEmail);
   const [isAdding, setIsAdding] = useState(false);
 
+  const currentUserName = getUserDisplayName(currentUserEmail);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
     setIsAdding(true);
     try {
-      console.log("Form submitting:", {
-        title: title.trim(),
-        description: description.trim(),
-        assignedTo,
-        currentUserEmail,
-      });
-
       await onAdd(title.trim(), description.trim(), assignedTo);
       setTitle("");
       setDescription("");
@@ -60,6 +51,13 @@ export function AddTodoForm({ onAdd, currentUserEmail }: AddTodoFormProps) {
     } finally {
       setIsAdding(false);
     }
+  };
+
+  const getAssigneeDisplayText = () => {
+    const assigneeName = getUserDisplayName(assignedTo);
+    return assignedTo === currentUserEmail
+      ? `Myself (${assigneeName})`
+      : assigneeName;
   };
 
   return (
@@ -98,7 +96,9 @@ export function AddTodoForm({ onAdd, currentUserEmail }: AddTodoFormProps) {
               <SelectContent className={undefined}>
                 {AUTHORIZED_USERS.map((email) => (
                   <SelectItem key={email} value={email} className={undefined}>
-                    {email === currentUserEmail ? `Myself (${email})` : email}
+                    {email === currentUserEmail
+                      ? `Myself (${getUserDisplayName(email)})`
+                      : getUserDisplayName(email)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -106,7 +106,7 @@ export function AddTodoForm({ onAdd, currentUserEmail }: AddTodoFormProps) {
           </div>
 
           <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">
-            Will assign to: <strong>{assignedTo}</strong>
+            Will assign to: <strong>{getAssigneeDisplayText()}</strong>
           </div>
 
           <Button

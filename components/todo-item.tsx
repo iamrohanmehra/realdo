@@ -7,16 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
-  Pencil,
-  Trash2,
-  Save,
-  X,
-  User as UserIcon,
-  UserCheck,
-} from "lucide-react";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Pencil, Trash2, Save, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getUserDisplayName } from "@/lib/user-mapping";
 
 interface TodoItemProps {
   todo: Todo;
@@ -44,7 +43,20 @@ export function TodoItem({
   const isCreatedByMe = todo.created_by === currentUser.id;
   const isAssignedToMe = todo.assigned_to_email === currentUser.email;
   const canMarkComplete = isAssignedToMe; // Only assigned user can mark as complete
-  const canEditOrDelete = isCreatedByMe || isAssignedToMe; // Can edit/delete if created by me or assigned to me
+
+  // New permission logic: can only edit/delete if created by me AND assigned to me
+  // OR if created by me (my own tasks)
+  // Cannot edit/delete tasks assigned to me by others
+  const canEditOrDelete = isCreatedByMe && (isAssignedToMe || !isAssignedToMe);
+
+  // More specific: if someone else created it and assigned it to me, I can only mark complete
+  const isAssignedByOther = !isCreatedByMe && isAssignedToMe;
+  const canOnlyMarkComplete = isAssignedByOther;
+
+  const creatorName = getUserDisplayName(
+    // We need to get creator email from the user ID - for now using a simple approach
+    isCreatedByMe ? currentUser.email : "other@email.com"
+  );
 
   const handleSave = async () => {
     if (!editTitle.trim()) return;
@@ -92,67 +104,96 @@ export function TodoItem({
     }
   };
 
-  return (
-    <Card
-      className={cn(
-        "transition-all duration-200",
-        todo.completed && "opacity-60",
-        isAssignedToMe
-          ? "border-blue-200 bg-blue-50/30"
-          : "border-green-200 bg-green-50/30"
-      )}
-    >
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
-          <Checkbox
-            checked={todo.completed}
-            onCheckedChange={handleToggleComplete}
-            disabled={!canMarkComplete || isUpdating}
-            className={cn(!canMarkComplete && "opacity-50 cursor-not-allowed")}
-          />
+  const getAssignedByText = () => {
+    if (isCreatedByMe) {
+      return isAssignedToMe ? "Created by you" : `Assigned by you`;
+    } else {
+      // Get the creator's name - we'll need to improve this
+      const creatorEmail = todo.created_by; // This is actually the user ID
+      // For now, determine based on current user
+      const otherUserEmail =
+        currentUser.email === "rohanmehra224466@gmail.com"
+          ? "ashish.efslon@gmail.com"
+          : "rohanmehra224466@gmail.com";
+      const otherUserName = getUserDisplayName(otherUserEmail);
+      return `Assigned by ${otherUserName}`;
+    }
+  };
 
-          <div className="flex-1 min-w-0">
-            {isEditing ? (
-              <div className="space-y-2">
-                <Input
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  placeholder="Todo title..."
-                  className="font-medium"
-                  type={undefined}
-                />
-                <Textarea
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  placeholder="Description (optional)..."
-                  className="min-h-[60px] resize-none"
-                />
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={handleSave}
-                    disabled={!editTitle.trim() || isUpdating}
-                    className={undefined}
-                    variant={undefined}
-                  >
-                    <Save className="w-3 h-3 mr-1" />
-                    Save
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={handleCancel}
-                    disabled={isUpdating}
-                    className={undefined}
-                  >
-                    <X className="w-3 h-3 mr-1" />
-                    Cancel
-                  </Button>
+  return (
+    <TooltipProvider>
+      <Card
+        className={cn(
+          "transition-all duration-200",
+          todo.completed && "opacity-60",
+          isAssignedToMe
+            ? "border-blue-200 bg-blue-50/30"
+            : "border-green-200 bg-green-50/30"
+        )}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <Checkbox
+                    checked={todo.completed}
+                    onCheckedChange={handleToggleComplete}
+                    disabled={!canMarkComplete || isUpdating}
+                    className={cn(
+                      !canMarkComplete && "opacity-50 cursor-not-allowed"
+                    )}
+                  />
                 </div>
-              </div>
-            ) : (
-              <div>
-                <div className="flex items-center gap-2 mb-1">
+              </TooltipTrigger>
+              {!canMarkComplete && (
+                <TooltipContent className={undefined}>
+                  <p>Only assignee can mark complete</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+
+            <div className="flex-1 min-w-0">
+              {isEditing ? (
+                <div className="space-y-2">
+                  <Input
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="Todo title..."
+                    className="font-medium"
+                    type={undefined}
+                  />
+                  <Textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder="Description (optional)..."
+                    className="min-h-[60px] resize-none"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={handleSave}
+                      disabled={!editTitle.trim() || isUpdating}
+                      className={undefined}
+                      variant={undefined}
+                    >
+                      <Save className="w-3 h-3 mr-1" />
+                      Save
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleCancel}
+                      disabled={isUpdating}
+                      className={undefined}
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div>
                   <h3
                     className={cn(
                       "font-medium text-sm",
@@ -161,71 +202,56 @@ export function TodoItem({
                   >
                     {todo.title}
                   </h3>
-                  <div className="flex gap-1">
-                    {isAssignedToMe ? (
-                      <Badge variant="default" className="text-xs">
-                        <UserCheck className="w-3 h-3 mr-1" />
-                        Assigned to you
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary" className="text-xs">
-                        <UserIcon className="w-3 h-3 mr-1" />
-                        Assigned to {todo.assigned_to_email}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
 
-                {todo.description && (
-                  <p
-                    className={cn(
-                      "text-xs text-gray-600 mt-1",
-                      todo.completed && "line-through"
-                    )}
-                  >
-                    {todo.description}
-                  </p>
-                )}
+                  {todo.description && (
+                    <p
+                      className={cn(
+                        "text-xs text-gray-600 mt-1",
+                        todo.completed && "line-through"
+                      )}
+                    >
+                      {todo.description}
+                    </p>
+                  )}
 
-                <div className="flex items-center justify-between mt-2">
-                  <p className="text-xs text-gray-400">
-                    Created by: {isCreatedByMe ? "You" : "Other user"}
+                  <p className="text-xs text-gray-400 mt-2">
+                    {getAssignedByText()}
                   </p>
 
-                  {!canMarkComplete && (
-                    <p className="text-xs text-orange-600">
-                      Only assignee can mark complete
+                  {canOnlyMarkComplete && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      You can only mark this task as complete
                     </p>
                   )}
                 </div>
+              )}
+            </div>
+
+            {!isEditing && !canOnlyMarkComplete && canEditOrDelete && (
+              <div className="flex gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setIsEditing(true)}
+                  disabled={isUpdating}
+                  className={undefined}
+                >
+                  <Pencil className="w-3 h-3" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleDelete}
+                  disabled={isUpdating}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </Button>
               </div>
             )}
           </div>
-
-          {!isEditing && canEditOrDelete && (
-            <div className="flex gap-1">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setIsEditing(true)}
-                disabled={isUpdating}
-                className={undefined}
-              >
-                <Pencil className="w-3 h-3" />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleDelete}
-                disabled={isUpdating}
-                className="text-red-600 hover:text-red-700"
-              >
-                <Trash2 className="w-3 h-3" />
-              </Button>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </TooltipProvider>
   );
 }

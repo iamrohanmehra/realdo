@@ -6,11 +6,7 @@ import { UserSection } from "./user-section";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogOut, Users } from "lucide-react";
-
-const AUTHORIZED_USERS = [
-  "rohanmehra224466@gmail.com",
-  "ashish.efslon@gmail.com", // Fixed email
-];
+import { AUTHORIZED_USERS, getUserDisplayName } from "@/lib/user-mapping";
 
 export function TodoApp() {
   const { user, loading: authLoading, signInWithGoogle, signOut } = useAuth();
@@ -85,8 +81,9 @@ export function TodoApp() {
     );
   }
 
-  const isRohan = user.email === "rohanmehra224466@gmail.com";
+  const isHimanshu = user.email === "rohanmehra224466@gmail.com";
   const isAshish = user.email === "ashish.efslon@gmail.com";
+  const currentUserName = getUserDisplayName(user.email);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -97,7 +94,9 @@ export function TodoApp() {
             Collaborative Todo App
           </h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">Welcome, {user.email}</span>
+            <span className="text-sm text-gray-600">
+              Welcome, {currentUserName}
+            </span>
             <Button
               onClick={signOut}
               variant="outline"
@@ -127,19 +126,17 @@ export function TodoApp() {
         {/* Ashish's Section */}
         <div className="w-1/2 p-6 border-r border-gray-200">
           <UserSection
-            userEmail="ashish.efslon@gmail.com" // Fixed email
+            userEmail="ashish.efslon@gmail.com"
             todos={todos}
             currentUser={user}
             onAddTodo={addTodo}
             onUpdateTodo={updateTodo}
             onDeleteTodo={deleteTodo}
             isCurrentUser={isAshish}
-            userId={""}
-            otherUserId={""}
           />
         </div>
 
-        {/* Rohan's Section */}
+        {/* Himanshu's Section */}
         <div className="w-1/2 p-6">
           <UserSection
             userEmail="rohanmehra224466@gmail.com"
@@ -148,9 +145,7 @@ export function TodoApp() {
             onAddTodo={addTodo}
             onUpdateTodo={updateTodo}
             onDeleteTodo={deleteTodo}
-            isCurrentUser={isRohan}
-            userId={""}
-            otherUserId={""}
+            isCurrentUser={isHimanshu}
           />
         </div>
       </main>
@@ -160,29 +155,6 @@ export function TodoApp() {
           Syncing...
         </div>
       )}
-
-      {/* Debug Info */}
-      <div className="fixed bottom-4 left-4 bg-gray-800 text-white px-3 py-2 rounded text-xs max-w-xs">
-        <div>User: {user.email}</div>
-        <div>User ID: {user.id}</div>
-        <div>Todos: {todos.length}</div>
-        <div>
-          Rohan todos:{" "}
-          {
-            todos.filter(
-              (t) => t.assigned_to_email === "rohanmehra224466@gmail.com"
-            ).length
-          }
-        </div>
-        <div>
-          Ashish todos:{" "}
-          {
-            todos.filter(
-              (t) => t.assigned_to_email === "ashish.efslon@gmail.com"
-            ).length
-          }
-        </div>
-      </div>
     </div>
   );
 }
