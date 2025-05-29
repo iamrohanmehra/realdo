@@ -1,9 +1,12 @@
-import { Button } from "@/components/ui/button";
+import { ConnectionTest } from "../components/connection-test";
 
 export default function Home() {
   return (
-    <div>
-      <Button>Click me</Button>
-    </div>
+    <main className="container mx-auto py-8">
+      <h1 className="text-3xl font-bold text-center mb-8">
+        Collaborative Todo App
+      </h1>
+      <ConnectionTest />
+    </main>
   );
 }
