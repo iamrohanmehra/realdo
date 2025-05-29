@@ -15,24 +15,13 @@ import {
 import { Plus } from "lucide-react";
 import { AUTHORIZED_USERS, getUserDisplayName } from "@/lib/user-mapping";
 
-interface AddTodoFormProps {
-  onAdd: (
-    title: string,
-    description: string,
-    assignedToEmail: string
-  ) => Promise<void>;
-  currentUserEmail: string;
-}
-
-export function AddTodoForm({ onAdd, currentUserEmail }: AddTodoFormProps) {
+export function AddTodoForm({ onAdd, currentUserEmail }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [assignedTo, setAssignedTo] = useState<string>(currentUserEmail);
+  const [assignedTo, setAssignedTo] = useState(currentUserEmail);
   const [isAdding, setIsAdding] = useState(false);
 
-  const currentUserName = getUserDisplayName(currentUserEmail);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim()) return;
 
@@ -53,45 +42,42 @@ export function AddTodoForm({ onAdd, currentUserEmail }: AddTodoFormProps) {
     }
   };
 
-  const getAssigneeDisplayText = () => {
-    const assigneeName = getUserDisplayName(assignedTo);
-    return assignedTo === currentUserEmail
-      ? `Myself (${assigneeName})`
-      : assigneeName;
-  };
-
   return (
-    <Card className={undefined}>
+    <Card className="w-full">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg">Add New Todo</CardTitle>
+        <CardTitle className="text-base">Add New Task</CardTitle>
       </CardHeader>
-      <CardContent className={undefined}>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="What needs to be done?"
-            disabled={isAdding}
-            className={undefined}
-            type={undefined}
-          />
-          <Textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Description (optional)..."
-            className="min-h-[60px] resize-none"
-            disabled={isAdding}
-          />
+      <CardContent className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="What needs to be done?"
+              disabled={isAdding}
+              className={undefined}
+              type={undefined}
+            />
+          </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Assign to:</label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Add a description (optional)"
+              className="min-h-[80px] resize-none"
+              disabled={isAdding}
+            />
+          </div>
+
+          <div className="space-y-2">
             <Select
               value={assignedTo}
               onValueChange={setAssignedTo}
               disabled={isAdding}
             >
               <SelectTrigger className={undefined}>
-                <SelectValue placeholder="Select assignee" />
+                <SelectValue placeholder="Assign to" />
               </SelectTrigger>
               <SelectContent className={undefined}>
                 {AUTHORIZED_USERS.map((email) => (
@@ -105,10 +91,6 @@ export function AddTodoForm({ onAdd, currentUserEmail }: AddTodoFormProps) {
             </Select>
           </div>
 
-          <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">
-            Will assign to: <strong>{getAssigneeDisplayText()}</strong>
-          </div>
-
           <Button
             type="submit"
             disabled={!title.trim() || isAdding}
@@ -117,7 +99,7 @@ export function AddTodoForm({ onAdd, currentUserEmail }: AddTodoFormProps) {
             size={undefined}
           >
             <Plus className="w-4 h-4 mr-2" />
-            {isAdding ? "Adding..." : "Add Todo"}
+            {isAdding ? "Adding..." : "Add Task"}
           </Button>
         </form>
       </CardContent>

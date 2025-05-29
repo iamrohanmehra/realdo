@@ -8,13 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import {
+  TooltipProvider,
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Pencil, Trash2, Save, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Edit2, Trash2, Save, X, Clock } from "lucide-react";
 import { getUserDisplayName } from "@/lib/user-mapping";
 
 interface TodoItemProps {
@@ -40,27 +39,20 @@ export function TodoItem({
   );
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const isCreatedByMe = todo.created_by === currentUser.id;
-  const isAssignedToMe = todo.assigned_to_email === currentUser.email;
-  const canMarkComplete = isAssignedToMe; // Only assigned user can mark as complete
+  const canEdit = currentUser.email === todo.assigned_to_email;
 
-  // New permission logic: can only edit/delete if created by me AND assigned to me
-  // OR if created by me (my own tasks)
-  // Cannot edit/delete tasks assigned to me by others
-  const canEditOrDelete = isCreatedByMe && (isAssignedToMe || !isAssignedToMe);
+  const handleToggleComplete = async () => {
+    if (!canEdit) return;
+    setIsUpdating(true);
+    try {
+      await onUpdate(todo.id, { completed: !todo.completed });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
 
-  // More specific: if someone else created it and assigned it to me, I can only mark complete
-  const isAssignedByOther = !isCreatedByMe && isAssignedToMe;
-  const canOnlyMarkComplete = isAssignedByOther;
-
-  const creatorName = getUserDisplayName(
-    // We need to get creator email from the user ID - for now using a simple approach
-    isCreatedByMe ? currentUser.email : "other@email.com"
-  );
-
-  const handleSave = async () => {
+  const handleSaveEdit = async () => {
     if (!editTitle.trim()) return;
-
     setIsUpdating(true);
     try {
       await onUpdate(todo.id, {
@@ -68,188 +60,156 @@ export function TodoItem({
         description: editDescription.trim(),
       });
       setIsEditing(false);
-    } catch (error) {
-      console.error("Failed to update todo:", error);
     } finally {
       setIsUpdating(false);
     }
   };
 
-  const handleCancel = () => {
+  const handleCancelEdit = () => {
     setEditTitle(todo.title);
     setEditDescription(todo.description || "");
     setIsEditing(false);
   };
 
-  const handleToggleComplete = async () => {
-    if (!canMarkComplete) return;
-
-    setIsUpdating(true);
-    try {
-      await onUpdate(todo.id, { completed: !todo.completed });
-    } catch (error) {
-      console.error("Failed to toggle completion:", error);
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
   const handleDelete = async () => {
-    if (window.confirm("Are you sure you want to delete this todo?")) {
-      try {
-        await onDelete(todo.id);
-      } catch (error) {
-        console.error("Failed to delete todo:", error);
-      }
+    if (!canEdit) return;
+    if (confirm("Are you sure you want to delete this task?")) {
+      await onDelete(todo.id);
     }
   };
 
-  const getAssignedByText = () => {
-    if (isCreatedByMe) {
-      return isAssignedToMe ? "Created by you" : `Assigned by you`;
-    } else {
-      // Get the creator's name - we'll need to improve this
-      const creatorEmail = todo.created_by; // This is actually the user ID
-      // For now, determine based on current user
-      const otherUserEmail =
-        currentUser.email === "rohanmehra224466@gmail.com"
-          ? "ashish.efslon@gmail.com"
-          : "rohanmehra224466@gmail.com";
-      const otherUserName = getUserDisplayName(otherUserEmail);
-      return `Assigned by ${otherUserName}`;
-    }
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   return (
     <TooltipProvider>
       <Card
-        className={cn(
-          "transition-all duration-200",
-          todo.completed && "opacity-60",
-          isAssignedToMe
-            ? "border-blue-200 bg-blue-50/30"
-            : "border-green-200 bg-green-50/30"
-        )}
+        className={`transition-all duration-200 group ${
+          todo.completed ? "bg-muted/50" : "hover:shadow-md"
+        }`}
       >
         <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <Checkbox
-                    checked={todo.completed}
-                    onCheckedChange={handleToggleComplete}
-                    disabled={!canMarkComplete || isUpdating}
-                    className={cn(
-                      !canMarkComplete && "opacity-50 cursor-not-allowed"
-                    )}
-                  />
-                </div>
-              </TooltipTrigger>
-              {!canMarkComplete && (
-                <TooltipContent className={undefined}>
-                  <p>Only assignee can mark complete</p>
-                </TooltipContent>
-              )}
-            </Tooltip>
-
-            <div className="flex-1 min-w-0">
-              {isEditing ? (
-                <div className="space-y-2">
-                  <Input
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    placeholder="Todo title..."
-                    className="font-medium"
-                    type={undefined}
-                  />
-                  <Textarea
-                    value={editDescription}
-                    onChange={(e) => setEditDescription(e.target.value)}
-                    placeholder="Description (optional)..."
-                    className="min-h-[60px] resize-none"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={handleSave}
-                      disabled={!editTitle.trim() || isUpdating}
-                      className={undefined}
-                      variant={undefined}
-                    >
-                      <Save className="w-3 h-3 mr-1" />
-                      Save
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleCancel}
-                      disabled={isUpdating}
-                      className={undefined}
-                    >
-                      <X className="w-3 h-3 mr-1" />
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div>
+          {isEditing ? (
+            <div className="space-y-4">
+              <Input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                disabled={isUpdating}
+                placeholder="Task title"
+                className={undefined}
+                type={undefined}
+              />
+              <Textarea
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Add a description"
+                className="min-h-[80px] resize-none"
+                disabled={isUpdating}
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleSaveEdit}
+                  disabled={!editTitle.trim() || isUpdating}
+                  size="sm"
+                  className={undefined}
+                  variant={undefined}
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Save
+                </Button>
+                <Button
+                  onClick={handleCancelEdit}
+                  disabled={isUpdating}
+                  variant="outline"
+                  size="sm"
+                  className={undefined}
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  checked={todo.completed}
+                  onCheckedChange={handleToggleComplete}
+                  disabled={!canEdit || isUpdating}
+                  className="mt-1"
+                />
+                <div className="flex-1 min-w-0">
                   <h3
-                    className={cn(
-                      "font-medium text-sm",
-                      todo.completed && "line-through text-gray-500"
-                    )}
+                    className={`font-medium leading-tight ${
+                      todo.completed
+                        ? "text-muted-foreground line-through"
+                        : "text-foreground"
+                    }`}
                   >
                     {todo.title}
                   </h3>
-
                   {todo.description && (
                     <p
-                      className={cn(
-                        "text-xs text-gray-600 mt-1",
-                        todo.completed && "line-through"
-                      )}
+                      className={`text-sm mt-1 ${
+                        todo.completed
+                          ? "text-muted-foreground/70"
+                          : "text-muted-foreground"
+                      }`}
                     >
                       {todo.description}
                     </p>
                   )}
-
-                  <p className="text-xs text-gray-400 mt-2">
-                    {getAssignedByText()}
-                  </p>
-
-                  {canOnlyMarkComplete && (
-                    <p className="text-xs text-blue-600 mt-1">
-                      You can only mark this task as complete
-                    </p>
-                  )}
                 </div>
-              )}
-            </div>
-
-            {!isEditing && !canOnlyMarkComplete && canEditOrDelete && (
-              <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setIsEditing(true)}
-                  disabled={isUpdating}
-                  className={undefined}
-                >
-                  <Pencil className="w-3 h-3" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={handleDelete}
-                  disabled={isUpdating}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </Button>
+                {canEdit && (
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={() => setIsEditing(true)}
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className={undefined}>
+                        <p>Edit task</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={handleDelete}
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className={undefined}>
+                        <p>Delete task</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+
+              <div className="flex items-center justify-start text-xs">
+                <div className="flex items-center gap-1 text-muted-foreground">
+                  <Clock className="w-3 h-3" />
+                  <span>{formatDate(todo.created_at)}</span>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </TooltipProvider>
