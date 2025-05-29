@@ -9,7 +9,7 @@ import { LogOut, Users } from "lucide-react";
 
 const AUTHORIZED_USERS = [
   "rohanmehra224466@gmail.com",
-  "ashish.efslon@gmail.com",
+  "ashish.efslon@gmail.com", // Fixed email
 ];
 
 export function TodoApp() {
@@ -69,6 +69,7 @@ export function TodoApp() {
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p>Sorry, this app is only available for authorized users.</p>
+            <p className="text-sm text-gray-600">Your email: {user.email}</p>
             <Button
               onClick={signOut}
               variant="outline"
@@ -126,13 +127,15 @@ export function TodoApp() {
         {/* Ashish's Section */}
         <div className="w-1/2 p-6 border-r border-gray-200">
           <UserSection
-            userEmail="ashish.efslon@gmail.com"
+            userEmail="ashish.efslon@gmail.com" // Fixed email
             todos={todos}
             currentUser={user}
             onAddTodo={addTodo}
             onUpdateTodo={updateTodo}
             onDeleteTodo={deleteTodo}
             isCurrentUser={isAshish}
+            userId={""}
+            otherUserId={""}
           />
         </div>
 
@@ -146,6 +149,8 @@ export function TodoApp() {
             onUpdateTodo={updateTodo}
             onDeleteTodo={deleteTodo}
             isCurrentUser={isRohan}
+            userId={""}
+            otherUserId={""}
           />
         </div>
       </main>
@@ -156,9 +161,27 @@ export function TodoApp() {
         </div>
       )}
 
-      {/* Debug Info (remove in production) */}
-      <div className="fixed bottom-4 left-4 bg-gray-800 text-white px-3 py-2 rounded text-xs">
-        User: {user.email} | Todos: {todos.length}
+      {/* Debug Info */}
+      <div className="fixed bottom-4 left-4 bg-gray-800 text-white px-3 py-2 rounded text-xs max-w-xs">
+        <div>User: {user.email}</div>
+        <div>User ID: {user.id}</div>
+        <div>Todos: {todos.length}</div>
+        <div>
+          Rohan todos:{" "}
+          {
+            todos.filter(
+              (t) => t.assigned_to_email === "rohanmehra224466@gmail.com"
+            ).length
+          }
+        </div>
+        <div>
+          Ashish todos:{" "}
+          {
+            todos.filter(
+              (t) => t.assigned_to_email === "ashish.efslon@gmail.com"
+            ).length
+          }
+        </div>
       </div>
     </div>
   );

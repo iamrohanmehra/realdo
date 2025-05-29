@@ -69,7 +69,11 @@ export function useTodos() {
     };
   }, [supabase]);
 
-  const addTodo = async (title: string, description: string = "") => {
+  const addTodo = async (
+    title: string,
+    description: string = "",
+    assignedToEmail: string
+  ) => {
     try {
       const {
         data: { user },
@@ -79,7 +83,13 @@ export function useTodos() {
         throw new Error("Not authenticated");
       }
 
-      console.log("Adding todo:", { title, description, user_id: user.id }); // Debug log
+      console.log("Adding todo:", {
+        title,
+        description,
+        assignedToEmail,
+        created_by: user.id,
+        user_email: user.email,
+      });
 
       const { data, error } = await supabase
         .from("todos")
@@ -87,17 +97,19 @@ export function useTodos() {
           title,
           description,
           created_by: user.id,
+          assigned_to: user.id, // Keep this for compatibility
+          assigned_to_email: assignedToEmail,
         })
         .select();
 
       if (error) {
-        console.error("Supabase error:", error); // Debug log
+        console.error("Supabase insert error:", error);
         throw error;
       }
 
-      console.log("Todo added successfully:", data); // Debug log
+      console.log("Todo inserted successfully:", data);
     } catch (err) {
-      console.error("Add todo error:", err); // Debug log
+      console.error("Add todo error:", err);
       setError(err instanceof Error ? err.message : "Failed to add todo");
       throw err;
     }

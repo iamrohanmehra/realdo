@@ -8,37 +8,38 @@ import { Badge } from "@/components/ui/badge";
 
 interface UserSectionProps {
   userEmail: string;
+  userId: string;
   todos: Todo[];
   currentUser: User;
-  onAddTodo: (title: string, description: string) => Promise<void>;
+  onAddTodo: (
+    title: string,
+    description: string,
+    assignedToEmail: string
+  ) => Promise<void>;
   onUpdateTodo: (
     id: string,
     updates: Partial<Pick<Todo, "title" | "description" | "completed">>
   ) => Promise<void>;
   onDeleteTodo: (id: string) => Promise<void>;
   isCurrentUser: boolean;
+  otherUserId: string;
 }
 
 export function UserSection({
   userEmail,
+  userId,
   todos,
   currentUser,
   onAddTodo,
   onUpdateTodo,
   onDeleteTodo,
   isCurrentUser,
+  otherUserId,
 }: UserSectionProps) {
-  // Filter todos by the user's email (since we're using email to identify users)
-  const userTodos = todos.filter((todo) => {
-    // For current user, show todos they created
-    if (isCurrentUser) {
-      return todo.created_by === currentUser.id;
-    }
-    // For other user, we need to identify them by email
-    // Since we don't have a users table, we'll show all todos not created by current user
-    return todo.created_by !== currentUser.id;
-  });
-
+  // Show todos assigned to this user (by email)
+  const userTodos = todos.filter(
+    (todo) => todo.assigned_to_email === userEmail
+  );
   const completedCount = userTodos.filter((todo) => todo.completed).length;
   const totalCount = userTodos.length;
 
@@ -59,7 +60,7 @@ export function UserSection({
 
       {isCurrentUser && (
         <div className="mb-4">
-          <AddTodoForm onAdd={onAddTodo} userEmail={userEmail} />
+          <AddTodoForm onAdd={onAddTodo} currentUserEmail={currentUser.email} />
         </div>
       )}
 
@@ -69,8 +70,8 @@ export function UserSection({
             <Card className={undefined}>
               <CardContent className="p-8 text-center text-gray-500">
                 {isCurrentUser
-                  ? "No todos yet. Add one above!"
-                  : "No todos yet."}
+                  ? "No todos assigned to you yet."
+                  : `No todos assigned to ${userEmail} yet.`}
               </CardContent>
             </Card>
           ) : (
@@ -81,7 +82,6 @@ export function UserSection({
                 currentUser={currentUser}
                 onUpdate={onUpdateTodo}
                 onDelete={onDeleteTodo}
-                userEmail={isCurrentUser ? currentUser.email : userEmail}
               />
             ))
           )}

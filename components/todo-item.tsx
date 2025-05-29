@@ -7,7 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
-import { Pencil, Trash2, Save, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Pencil,
+  Trash2,
+  Save,
+  X,
+  User as UserIcon,
+  UserCheck,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TodoItemProps {
@@ -18,7 +26,6 @@ interface TodoItemProps {
     updates: Partial<Pick<Todo, "title" | "description" | "completed">>
   ) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
-  userEmail: string;
 }
 
 export function TodoItem({
@@ -26,7 +33,6 @@ export function TodoItem({
   currentUser,
   onUpdate,
   onDelete,
-  userEmail,
 }: TodoItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(todo.title);
@@ -35,8 +41,10 @@ export function TodoItem({
   );
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const isOwnTodo = todo.created_by === currentUser.id;
-  const canMarkComplete = isOwnTodo;
+  const isCreatedByMe = todo.created_by === currentUser.id;
+  const isAssignedToMe = todo.assigned_to_email === currentUser.email;
+  const canMarkComplete = isAssignedToMe; // Only assigned user can mark as complete
+  const canEditOrDelete = isCreatedByMe || isAssignedToMe; // Can edit/delete if created by me or assigned to me
 
   const handleSave = async () => {
     if (!editTitle.trim()) return;
@@ -89,7 +97,9 @@ export function TodoItem({
       className={cn(
         "transition-all duration-200",
         todo.completed && "opacity-60",
-        isOwnTodo ? "border-blue-200 bg-blue-50/30" : "border-gray-200"
+        isAssignedToMe
+          ? "border-blue-200 bg-blue-50/30"
+          : "border-green-200 bg-green-50/30"
       )}
     >
       <CardContent className="p-4">
@@ -142,14 +152,30 @@ export function TodoItem({
               </div>
             ) : (
               <div>
-                <h3
-                  className={cn(
-                    "font-medium text-sm",
-                    todo.completed && "line-through text-gray-500"
-                  )}
-                >
-                  {todo.title}
-                </h3>
+                <div className="flex items-center gap-2 mb-1">
+                  <h3
+                    className={cn(
+                      "font-medium text-sm",
+                      todo.completed && "line-through text-gray-500"
+                    )}
+                  >
+                    {todo.title}
+                  </h3>
+                  <div className="flex gap-1">
+                    {isAssignedToMe ? (
+                      <Badge variant="default" className="text-xs">
+                        <UserCheck className="w-3 h-3 mr-1" />
+                        Assigned to you
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="text-xs">
+                        <UserIcon className="w-3 h-3 mr-1" />
+                        Assigned to {todo.assigned_to_email}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+
                 {todo.description && (
                   <p
                     className={cn(
@@ -160,18 +186,23 @@ export function TodoItem({
                     {todo.description}
                   </p>
                 )}
-                {/* <p className="text-xs text-gray-400 mt-2">
-                  Created by: {userEmail}
-                </p> */}
-                {/* Replace the creator email display section with */}
-                <p className="text-xs text-gray-400 mt-2">
-                  Created by: {isOwnTodo ? "You" : "Other user"}
-                </p>
+
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-gray-400">
+                    Created by: {isCreatedByMe ? "You" : "Other user"}
+                  </p>
+
+                  {!canMarkComplete && (
+                    <p className="text-xs text-orange-600">
+                      Only assignee can mark complete
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </div>
 
-          {!isEditing && (
+          {!isEditing && canEditOrDelete && (
             <div className="flex gap-1">
               <Button
                 size="sm"
