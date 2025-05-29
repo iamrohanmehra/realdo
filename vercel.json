@@ -1,11 +1,6 @@
 {
   "version": 2,
   "regions": ["bom1"],
-  "functions": {
-    "app/**": {
-      "runtime": "nodejs20.x"
-    }
-  },
   "build": {
     "env": {
       "NEXT_TELEMETRY_DISABLED": "1"
