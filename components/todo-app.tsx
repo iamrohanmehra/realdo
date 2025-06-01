@@ -124,10 +124,10 @@ export function TodoApp() {
   }
 
   const isHimanshu = user.email === "rohanmehra224466@gmail.com";
-  const isAshish = user.email === "akshkgd@gmail.com";
+  const isAshish = user.email === "ashish.efslon@gmail.com";
   const currentUserName = getUserDisplayName(user.email);
 
-  const userEmails = ["akshkgd@gmail.com", "rohanmehra224466@gmail.com"];
+  const userEmails = ["ashish.efslon@gmail.com", "rohanmehra224466@gmail.com"];
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
@@ -203,7 +203,7 @@ export function TodoApp() {
                 <div className="h-full flex justify-center">
                   <div className="w-full max-w-2xl h-full overflow-hidden">
                     <UserSection
-                      userEmail="akshkgd@gmail.com"
+                      userEmail="ashish.efslon@gmail.com"
                       todos={todos}
                       currentUser={user}
                       onUpdateTodo={updateTodo}
