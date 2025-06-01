@@ -3,6 +3,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { useTodos } from "@/hooks/use-todos";
 import { UserSection } from "./user-section";
+import { AddTodoDialog } from "./add-todo-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -17,10 +18,11 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-import { LogOut, Users, CheckSquare, Monitor } from "lucide-react";
+import { LogOut, Users, CheckSquare, Monitor, Plus } from "lucide-react";
 import { AUTHORIZED_USERS, getUserDisplayName } from "@/lib/user-mapping";
 import { cleanupOldCompletedTasks } from "@/lib/cleanup";
 import { useEffect, useState } from "react";
+import { Toaster } from "sonner";
 
 export function TodoApp() {
   const { user, loading: authLoading, signInWithGoogle, signOut } = useAuth();
@@ -35,6 +37,8 @@ export function TodoApp() {
 
   // State for mobile view user selection
   const [selectedUserView, setSelectedUserView] = useState<string>("");
+  // State for add todo dialog
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -43,6 +47,10 @@ export function TodoApp() {
       setSelectedUserView(user.email);
     }
   }, [user]);
+
+  const handleFabClick = () => {
+    setIsAddDialogOpen(true);
+  };
 
   if (authLoading) {
     return (
@@ -123,8 +131,11 @@ export function TodoApp() {
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
+      {/* Toast notifications */}
+      <Toaster position="top-center" richColors />
+
       {/* Fixed Header */}
-      <header className="border-b bg-background flex-shrink-0 z-10">
+      <header className="border-b bg-card/50 flex-shrink-0 z-10">
         <div className="w-full flex h-14 items-center px-4">
           <div className="flex items-center gap-2">
             <CheckSquare className="w-6 h-6 text-primary" />
@@ -179,7 +190,7 @@ export function TodoApp() {
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 w-full px-4 py-6 overflow-hidden">
+      <div className="flex-1 w-full px-4 py-4 overflow-hidden relative">
         {/* Desktop Layout with Resizable Panels */}
         <div className="hidden lg:block h-full w-full">
           <ResizablePanelGroup
@@ -195,7 +206,6 @@ export function TodoApp() {
                       userEmail="ashish.efslon@gmail.com"
                       todos={todos}
                       currentUser={user}
-                      onAddTodo={addTodo}
                       onUpdateTodo={updateTodo}
                       onDeleteTodo={deleteTodo}
                       isCurrentUser={isAshish}
@@ -216,7 +226,6 @@ export function TodoApp() {
                       userEmail="rohanmehra224466@gmail.com"
                       todos={todos}
                       currentUser={user}
-                      onAddTodo={addTodo}
                       onUpdateTodo={updateTodo}
                       onDeleteTodo={deleteTodo}
                       isCurrentUser={isHimanshu}
@@ -236,7 +245,6 @@ export function TodoApp() {
                 userEmail={selectedUserView}
                 todos={todos}
                 currentUser={user}
-                onAddTodo={addTodo}
                 onUpdateTodo={updateTodo}
                 onDeleteTodo={deleteTodo}
                 isCurrentUser={selectedUserView === user.email}
@@ -244,10 +252,32 @@ export function TodoApp() {
             </div>
           </div>
         </div>
+
+        {/* Floating Action Button with Persistent Tilt Animation */}
+        <Button
+          onClick={handleFabClick}
+          size="lg"
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-50"
+          style={{
+            transform: `rotate(${isAddDialogOpen ? 45 : 0}deg)`,
+            transition: "transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
+          variant={undefined}
+        >
+          <Plus className="w-6 h-6" />
+        </Button>
       </div>
 
+      {/* Add Todo Dialog - Available for ALL users */}
+      <AddTodoDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        onAdd={addTodo}
+        currentUserEmail={user.email}
+      />
+
       {/* Fixed Footer */}
-      <footer className="border-t bg-background flex-shrink-0 z-10">
+      <footer className="border-t bg-card/50 flex-shrink-0 z-10">
         <div className="w-full px-4 py-3">
           <p className="text-center text-sm text-muted-foreground">
             Built with Next.js, Supabase & shadcn/ui • Collaborative Todo
@@ -257,7 +287,7 @@ export function TodoApp() {
       </footer>
 
       {todosLoading && (
-        <div className="fixed bottom-16 right-4 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground shadow-md z-20">
+        <div className="fixed bottom-20 right-4 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground shadow-md z-20">
           Syncing...
         </div>
       )}

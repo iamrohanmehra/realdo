@@ -1,4 +1,3 @@
-// hooks/use-todos.ts
 "use client";
 
 import { useEffect, useState } from "react";
@@ -115,28 +114,62 @@ export function useTodos() {
 
   const updateTodo = async (
     id: string,
-    updates: Partial<
-      Pick<Todo, "title" | "description" | "completed" | "completed_at">
-    >
+    updates: Partial<Pick<Todo, "title" | "description" | "completed">> & {
+      assigned_to_email?: string;
+    }
   ) => {
     try {
-      // If marking as completed, add completed_at timestamp
-      const updateData = { ...updates };
-      if (updates.completed === true) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
+
+      const updateData: any = {
+        ...updates,
+        updated_at: new Date().toISOString(),
+      };
+
+      // If assignment is being changed, we need to update both assigned_to and assigned_to_email
+      if (updates.assigned_to_email) {
+        // For now, we'll just update the email. You might need to implement
+        // a user lookup if you need the assigned_to UUID as well
+        updateData.assigned_to_email = updates.assigned_to_email;
+      }
+
+      // If marking as completed, set completed_at
+      if (
+        updates.completed === true &&
+        !todos.find((t) => t.id === id)?.completed
+      ) {
         updateData.completed_at = new Date().toISOString();
       } else if (updates.completed === false) {
         updateData.completed_at = null;
       }
 
+      // Fix: Use 'todos' table instead of 'tasks'
       const { error } = await supabase
         .from("todos")
         .update(updateData)
         .eq("id", id);
 
-      if (error) throw error;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update todo");
-      throw err;
+      if (error) {
+        console.error("Supabase update error:", error);
+        throw error;
+      }
+
+      // Update local state
+      setTodos((prev) =>
+        prev.map((todo) => (todo.id === id ? { ...todo, ...updateData } : todo))
+      );
+    } catch (error) {
+      console.error("Error updating todo:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to update todo"
+      );
+      throw error;
     }
   };
 
@@ -144,15 +177,19 @@ export function useTodos() {
     try {
       const { error } = await supabase.from("todos").delete().eq("id", id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase delete error:", error);
+        throw error;
+      }
     } catch (err) {
+      console.error("Delete todo error:", err);
       setError(err instanceof Error ? err.message : "Failed to delete todo");
       throw err;
     }
   };
 
   return {
-    todos: filteredTodos, // Return filtered todos
+    todos: filteredTodos,
     loading,
     error,
     addTodo,
