@@ -65,7 +65,7 @@ export function TodoApp() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen px-2 flex items-center justify-center bg-background">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center space-y-4">
             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -124,10 +124,10 @@ export function TodoApp() {
   }
 
   const isHimanshu = user.email === "rohanmehra224466@gmail.com";
-  const isAshish = user.email === "ashish.efslon@gmail.com";
+  const isAshish = user.email === "akshkgd@gmail.com";
   const currentUserName = getUserDisplayName(user.email);
 
-  const userEmails = ["ashish.efslon@gmail.com", "rohanmehra224466@gmail.com"];
+  const userEmails = ["akshkgd@gmail.com", "rohanmehra224466@gmail.com"];
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
@@ -203,7 +203,7 @@ export function TodoApp() {
                 <div className="h-full flex justify-center">
                   <div className="w-full max-w-2xl h-full overflow-hidden">
                     <UserSection
-                      userEmail="ashish.efslon@gmail.com"
+                      userEmail="akshkgd@gmail.com"
                       todos={todos}
                       currentUser={user}
                       onUpdateTodo={updateTodo}
@@ -277,14 +277,14 @@ export function TodoApp() {
       />
 
       {/* Fixed Footer */}
-      <footer className="border-t bg-card/50 flex-shrink-0 z-10">
+      {/* <footer className="border-t bg-card/50 flex-shrink-0 z-10">
         <div className="w-full px-4 py-3">
           <p className="text-center text-sm text-muted-foreground">
             Built with Next.js, Supabase & shadcn/ui • Collaborative Todo
             Workspace
           </p>
         </div>
-      </footer>
+      </footer> */}
 
       {todosLoading && (
         <div className="fixed bottom-20 right-4 rounded-md bg-primary px-3 py-2 text-sm text-primary-foreground shadow-md z-20">

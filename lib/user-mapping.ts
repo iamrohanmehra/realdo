@@ -18,13 +18,13 @@ export function getUserEmailById(userId: string): string | undefined {
 
 export const AUTHORIZED_USERS = [
   "rohanmehra224466@gmail.com",
-  "ashish.efslon@gmail.com",
+  "akshkgd@gmail.com",
 ];
 
 // User display names mapping
 export const USER_DISPLAY_NAMES: Record<string, string> = {
   "rohanmehra224466@gmail.com": "Himanshu",
-  "ashish.efslon@gmail.com": "Ashish",
+  "akshkgd@gmail.com": "Ashish",
 };
 
 export function getUserDisplayName(email: string): string {
